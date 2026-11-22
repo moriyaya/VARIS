@@ -25,7 +25,7 @@ def main():
             temporary.replace(path)
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         if digest != item["sha256"]:
-            raise RuntimeError(f"Checksum mismatch: {path}. Obtain the recorded snapshot; do not substitute a new dependency version.")
+            raise RuntimeError(f"Checksum mismatch: {path}.")
         if path.name.endswith(".tar.gz"):
             dest = a.root/"vendor"/item["name"]
             if dest.exists():

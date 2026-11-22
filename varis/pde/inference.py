@@ -114,41 +114,7 @@ def preference_repair_varis(model, starts, nu, obs, preferences, args):
     rejected = accepted.clone()
     repair_calls = 0
     repair_responses = 0
-    trace = not args.no_trace
-    trace_trials = {0, 1, 5, 10, 25, args.repair_trials}
     history = []
-
-    def append_history(trial, phase):
-        """Record the current output."""
-        with torch.no_grad():
-            candidate_loss = lower_loss(y, nus, observations)
-            candidate_score = upper_score(y, repeated_preferences)
-            incumbent_score = upper_score(incumbent, repeated_preferences)
-            use_candidate = should_repair_flat & (candidate_loss <= args.threshold)
-            use_candidate &= (~has_incumbent) | (candidate_score < incumbent_score)
-            output = torch.where(use_candidate[:, None], y, incumbent)
-            # Queries without an incumbent remain represented by their current
-            # repair candidate until fallback is invoked.
-            output = torch.where((has_incumbent | use_candidate)[:, None], output, y)
-            output_loss = lower_loss(output, nus, observations)
-            desired = torch.where(repeated_preferences > 0.5, 1.0, -1.0)
-            valid = output_loss <= args.threshold
-            branch = output[:, N_MODES] * desired > 0
-            sync(y.device)
-            history.append({
-                "step": int(trial),
-                "repair_trial": int(trial),
-                "phase": phase,
-                "elapsed_s": time.perf_counter() - begun,
-                "mean_lower": float(output_loss.mean()),
-                "valid_rate": float(valid.float().mean()),
-                "joint_rate": float((valid & branch).float().mean()),
-                "mean_upper": float(upper_score(output, repeated_preferences).mean()),
-            })
-
-    if trace:
-        append_history(0, "generated")
-    completed_trials = 0
     for trial in range(1, args.repair_trials + 1):
         indexes = torch.nonzero(pending).flatten()
         if not len(indexes):
@@ -173,9 +139,6 @@ def preference_repair_varis(model, starts, nu, obs, preferences, args):
             pending[indexes[done]] = False
         repair_calls += 2
         repair_responses += 2 * len(indexes)
-        completed_trials = trial
-        if trace and trial in trace_trials:
-            append_history(trial, "repair")
 
     with torch.no_grad():
         repaired_loss = lower_loss(y, nus, observations)
@@ -198,7 +161,7 @@ def preference_repair_varis(model, starts, nu, obs, preferences, args):
     if len(needed_tasks):
         fallback, fallback_meta, _, _ = fallback_pool(
             starts[needed_tasks], nu[needed_tasks], obs[needed_tasks],
-            preferences, args, trace=False)
+            preferences, args)
         reshaped = y.reshape(tasks, -1, dim)
         masks = needs_fallback.reshape(tasks, -1)[needed_tasks]
         reshaped[needed_tasks] = torch.where(masks[..., None], fallback, reshaped[needed_tasks])
@@ -208,22 +171,6 @@ def preference_repair_varis(model, starts, nu, obs, preferences, args):
     for i in range(len(y)):
         if bool(needs_fallback[i]):
             stages[i] = "fallback" if bool(final_loss[i] <= args.threshold) else "unresolved"
-    if trace:
-        with torch.no_grad():
-            desired = torch.where(repeated_preferences > 0.5, 1.0, -1.0)
-            valid = final_loss <= args.threshold
-            branch = y[:, N_MODES] * desired > 0
-            sync(y.device)
-            history.append({
-                "step": int(args.repair_trials + 1),
-                "repair_trial": int(completed_trials),
-                "phase": "final_with_fallback",
-                "elapsed_s": time.perf_counter() - begun,
-                "mean_lower": float(final_loss.mean()),
-                "valid_rate": float(valid.float().mean()),
-                "joint_rate": float((valid & branch).float().mean()),
-                "mean_upper": float(upper_score(y, repeated_preferences).mean()),
-            })
     sync(y.device)
     meta = {"online_s": time.perf_counter() - begun, "repair_calls": repair_calls,
             "repair_response_evaluations": repair_responses, "fallback": fallback_meta,
@@ -273,7 +220,7 @@ def save_csv(path, rows):
             writer.writerows(rows)
 
 
-def fallback_pool(starts,nu,obs,preferences,args,trace=False):
+def fallback_pool(starts,nu,obs,preferences,args):
     count,k,dim=starts.shape
     y=starts.reshape(-1,dim).clone()
     nus=nu.repeat_interleave(k);observations=obs.repeat_interleave(k,0)

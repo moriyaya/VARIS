@@ -2,7 +2,7 @@
 from __future__ import annotations
 import numpy as np
 import torch
-from .geometry import MLP, VALID_RADIUS, branch_centers, upper_targets
+from .geometry import VALID_RADIUS, branch_centers, upper_targets
 from ..optimization import OuterConfig, _clip_vector, _solve_preference_qp, _stack_hypergradients
 class ContextualTripleWellProblem:
     num_objectives = 3
@@ -143,13 +143,12 @@ def select_amortized_response(
     problem: ContextualTripleWellProblem,
     x: torch.Tensor,
     preference: np.ndarray,
-    models: dict[str, torch.nn.Module],
-    method: str,
+    model: torch.nn.Module,
 ) -> tuple[torch.Tensor, int]:
     context = problem.context[None]
     common = torch.cat((context, x.reshape(1, 1)), dim=1)
     with torch.no_grad():
-        candidates = models["multi"](common).reshape(3, 2)
+        candidates = model(common).reshape(3, 2)
     scores = candidate_upper_scores(problem, x, candidates, preference)
     gaps = torch.stack([problem.lower_gap(x, candidate)[0] for candidate in candidates])
     valid = gaps <= VALID_RADIUS**2
@@ -163,8 +162,7 @@ def select_amortized_response(
 def run_amortized(
     problem: ContextualTripleWellProblem,
     preference: np.ndarray,
-    models: dict[str, torch.nn.Module],
-    method: str,
+    model: torch.nn.Module,
     config: OuterConfig,
 ) -> tuple[torch.Tensor, torch.Tensor, int]:
     x = problem.initial_x(0)
@@ -172,7 +170,7 @@ def run_amortized(
     total_feedback_steps = 0
     upper_losses = problem.upper_losses()
     for _ in range(config.outer_steps):
-        y, feedback_steps = select_amortized_response(problem, x, preference, models, method)
+        y, feedback_steps = select_amortized_response(problem, x, preference, model)
         total_feedback_steps += feedback_steps
         values, grad_matrix, v_cache = _stack_hypergradients(
             upper_losses,
@@ -190,7 +188,7 @@ def run_amortized(
         direction = grad_matrix @ weights
         direction, _, _, _ = _clip_vector(direction, config.direction_clip_norm)
         x = (x - config.outer_lr * direction).detach()
-    y, feedback_steps = select_amortized_response(problem, x, preference, models, method)
+    y, feedback_steps = select_amortized_response(problem, x, preference, model)
     total_feedback_steps += feedback_steps
     return x, y.detach(), total_feedback_steps
 

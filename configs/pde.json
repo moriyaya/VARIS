@@ -28,6 +28,5 @@
   "repair_trials": 50,
   "repair_lr": 1.0,
   "trust_radius": 0.15,
-  "sigma": 0.0001,
-  "no_trace": true
+  "sigma": 0.0001
 }

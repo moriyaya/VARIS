@@ -15,8 +15,6 @@ def main():
     p.add_argument('--checkpoint',type=Path)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--device',default='cpu')
-    p.add_argument('--steps',type=int)
-    p.add_argument('--quick',action='store_true',help='Evaluate one context and two preferences.')
     a=p.parse_args();cfg=json.loads(a.config.read_text());a.output.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(2)
     if a.variant=='coupled':
@@ -27,7 +25,7 @@ def main():
         device=torch.device(a.device);geometry.seed_everything(a.seed)
         model=geometry.MLP(3,6).to(device)
         opt=torch.optim.Adam(model.parameters(),lr=cfg['learning_rate'])
-        steps=a.steps or cfg['training_steps'];history=[]
+        steps=cfg['training_steps'];history=[]
         for step in range(steps):
             c,x,_,centers=geometry.sample_problem(cfg['batch_size'],device,'train')
             prediction=model(torch.cat((c,x),1)).reshape(-1,3,2)
@@ -42,17 +40,16 @@ def main():
     if state.get('variant',a.variant)!=a.variant:raise ValueError('Checkpoint variant mismatch')
     model.load_state_dict(state['state_dict']);model.eval().requires_grad_(False)
     contexts=list(cfg['CONTEXTS'].items());preferences=list(cfg['PREFERENCES'].items())
-    if a.quick:contexts=contexts[:1];preferences=preferences[:2]
     rows=[]
     for cname,c in contexts:
         for pname,pref in preferences:
             problem=solver.ContextualTripleWellProblem(c,a.seed);r=np.asarray(pref)
             if a.action=='decision':
-                x,y=decision.optimize_query('learned_set',problem,r,{'multi':model},a.steps or cfg['decision_steps'],cfg['decision_lr'])
+                x,y=decision.optimize_query(problem,r,model,cfg['decision_steps'],cfg['decision_lr'])
                 metrics=decision.evaluate(problem,r,x,y)
             else:
-                outer=OuterConfig(outer_steps=a.steps or cfg['outer_steps'],outer_lr=cfg['outer_lr'])
-                x,y,_=solver.run_amortized(problem,r,{'multi':model},'ours_full',outer)
+                outer=OuterConfig(outer_steps=cfg['outer_steps'],outer_lr=cfg['outer_lr'])
+                x,y,_=solver.run_amortized(problem,r,model,outer)
                 metrics=solver.evaluate_result(problem,r,x,y)
             rows.append(dict(seed=a.seed,variant=a.variant,context=cname,preference=pname,split=problem.split,**metrics))
     with (a.output/'results.csv').open('w',newline='') as f:

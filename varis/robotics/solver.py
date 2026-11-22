@@ -11,8 +11,8 @@ OUT=Path("outputs/panda")
 def seed_for(dataset_seed,target_id,inference_seed,stream):
     key=f"{dataset_seed}:{target_id}:{inference_seed}:{stream}".encode()
     return int.from_bytes(hashlib.sha256(key).digest()[:4],"little")
-def optimizer_config(steps=None):
-    return outer.OuterConfig(outer_steps=steps or CFG["outer_steps"],outer_lr=CFG["outer_lr"],
+def optimizer_config():
+    return outer.OuterConfig(outer_steps=CFG["outer_steps"],outer_lr=CFG["outer_lr"],
         cg_steps=CFG["cg_steps"],cg_damping=CFG["cg_damping"],u=CFG["preference_scale"],
         direction_clip_norm=CFG["direction_clip_norm"],log_every=CFG["log_every"])
 
@@ -157,8 +157,8 @@ def run_varis(problem, preference, cfg, seed, callback, counts, dataset_seed, ti
     return x, y
 
 
-def solve(backend, goal, start, warm, tid, seed, r, dataset_seed, steps=None):
-    cfg = optimizer_config(steps)
+def solve(backend, goal, start, warm, tid, seed, r, dataset_seed):
+    cfg = optimizer_config()
     valid_q = warm["q"][warm["valid"]].to(backend.device)
     if not len(valid_q):
         return {"failed_initialization": True, "archive": [], "solve_seconds": 0., "history": []}

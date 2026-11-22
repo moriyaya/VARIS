@@ -11,16 +11,14 @@ from .inference import make_starts, preference_repair_varis, score_rows, save_cs
 
 ROOT = Path(__file__).resolve().parents[2]
 
-def train(cfg, seed, device, output, quick):
+def train(cfg, seed, device, output):
     torch.manual_seed(51000 + seed)
-    count = 16 if quick else cfg.train_tasks
+    count = cfg.train_tasks
     data = make_dataset(count, 52000 + seed, device, "train")
     model = ResponseGenerator().to(device)
     phases = [(cfg.distill_steps, cfg.lower_steps, cfg.learning_rate),
               (0, cfg.finetune_steps, cfg.finetune_lr)]
     for phase, (distill_steps, lower_steps, lr) in enumerate(phases):
-        if quick:
-            distill_steps, lower_steps = (1, 1) if phase == 0 else (0, 1)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         sampler = torch.Generator().manual_seed(54000 + seed)
         for step in range(distill_steps + lower_steps):
@@ -47,22 +45,20 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--checkpoint", type=Path)
     p.add_argument("--output", type=Path, default=Path("outputs/pde"))
-    p.add_argument("--tasks", type=int)
-    p.add_argument("--quick", action="store_true", help="Evaluate four tasks per split or run a short training check.")
     a = p.parse_args()
     torch.set_num_threads(2)
     cfg = SimpleNamespace(**json.loads(a.config.read_text()))
     a.output.mkdir(parents=True, exist_ok=True)
     device = torch.device(a.device)
-    (a.output/"run.json").write_text(json.dumps(dict(seed=a.seed, config=vars(cfg), quick=a.quick, device=a.device), indent=2))
+    (a.output/"run.json").write_text(json.dumps(dict(seed=a.seed, config=vars(cfg), device=a.device), indent=2))
     if a.action == "train":
-        train(cfg, a.seed, device, a.output, a.quick)
+        train(cfg, a.seed, device, a.output)
         return
     model = ResponseGenerator().to(device)
     checkpoint = a.checkpoint or ROOT/f"checkpoints/pde/seed{a.seed}.pt"
     model.load_state_dict(torch.load(checkpoint, map_location=device, weights_only=True)["state_dict"])
     model.eval()
-    tasks = a.tasks or (4 if a.quick else cfg.test_tasks)
+    tasks = cfg.test_tasks
     prefs = torch.tensor(cfg.preferences, device=device)
     rows, summary = [], {}
     for index, split in enumerate(["interpolation", "low_extrapolation", "high_extrapolation"]):

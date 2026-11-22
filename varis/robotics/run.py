@@ -11,8 +11,6 @@ def main():
     p.add_argument("--output", type=Path, default=Path("outputs/panda"))
     p.add_argument("--dataset", type=Path, default=Path("assets/robotics/data/targets.pt"))
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--targets", type=int, default=32)
-    p.add_argument("--steps", type=int)
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=True)
     solver.OUT = a.output
@@ -23,9 +21,7 @@ def main():
     data = torch.load(a.dataset, map_location="cpu", weights_only=True)
     # Witnesses construct targets; the response oracle never receives them.
     data.pop("withheld_witness", None)
-    if not 1 <= a.targets <= cfg["formal_targets"]:
-        p.error("--targets must be between 1 and 32")
-    for tid in range(a.targets):
+    for tid in range(cfg["formal_targets"]):
         goal = data["target_poses"][tid].to(backend.device)
         start = data["q_start"][tid].to(backend.device)
         warm = solver.warm_pool(backend, goal, tid, a.seed, data["dataset_seed"])
@@ -33,7 +29,7 @@ def main():
             destination = a.output/f"target{tid:03d}_seed{a.seed}_r{r}.json"
             if destination.exists():
                 continue
-            result = solver.solve(backend, goal, start, warm, tid, a.seed, r, data["dataset_seed"], a.steps)
+            result = solver.solve(backend, goal, start, warm, tid, a.seed, r, data["dataset_seed"])
             result.update(target=tid, seed=a.seed, preference=r)
             archive = result["archive"]
             result["selected"] = min(archive, key=lambda v:r*v["F"][0]+(1-r)*v["F"][1]) if archive else None

@@ -4,10 +4,9 @@ import numpy as np
 from . import solver
 from . import geometry as mechanism
 
-def select_response(method, problem, x, preference, models):
-    centers=problem.centers(x)
+def select_response(problem, x, preference, model):
     common=torch.cat((problem.context[None],x.reshape(1,1)),dim=1)
-    candidates=models['multi'](common).reshape(3,2)
+    candidates=model(common).reshape(3,2)
     scores=torch.stack([problem.scalar_upper(x,y,preference) for y in candidates])
     gaps=torch.stack([problem.lower_gap(x,y)[0] for y in candidates])
     valid=gaps.detach() <= mechanism.VALID_RADIUS**2
@@ -15,10 +14,9 @@ def select_response(method, problem, x, preference, models):
     return candidates[int(index)]
 
 def optimize_query(
-    method: str,
     problem: solver.ContextualTripleWellProblem,
     preference: np.ndarray,
-    models: dict[str, torch.nn.Module],
+    model: torch.nn.Module,
     steps: int,
     learning_rate: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -26,14 +24,14 @@ def optimize_query(
     optimizer = torch.optim.Adam([x], lr=learning_rate)
     for _ in range(steps):
         optimizer.zero_grad(set_to_none=True)
-        response = select_response(method, problem, x, preference, models)
+        response = select_response(problem, x, preference, model)
         objective = problem.scalar_upper(x, response, preference)
         objective.backward()
         optimizer.step()
         with torch.no_grad():
             x.clamp_(-1.0, 1.0)
     with torch.no_grad():
-        response = select_response(method, problem, x, preference, models)
+        response = select_response(problem, x, preference, model)
     return x.detach(), response.detach()
 
 

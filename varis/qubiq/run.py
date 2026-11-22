@@ -19,7 +19,6 @@ def main():
     p.add_argument("--config", type=Path, default=ROOT/"configs/qubiq.json")
     p.add_argument("--splits", type=Path, default=ROOT/"configs/qubiq_splits.json")
     p.add_argument("--device", default="cpu")
-    p.add_argument("--epochs", type=int)
     p.add_argument("--checkpoint", type=Path)
     p.add_argument("--output", type=Path, default=Path("outputs/qubiq"))
     a = p.parse_args()
@@ -40,7 +39,7 @@ def main():
     checkpoint = a.checkpoint or a.output/"best.pt"
     history = []
     if a.action == "train":
-        epochs = a.epochs or cfg["epochs"]
+        epochs = cfg["epochs"]
         optimizer = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
         best = -np.inf
