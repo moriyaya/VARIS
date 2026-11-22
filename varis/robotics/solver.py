@@ -5,15 +5,15 @@ from pathlib import Path
 import numpy as np
 import torch
 from .backend import sync
-from .. import optimization as WC
+from .. import optimization as outer
 CFG=json.loads((Path(__file__).resolve().parents[2]/"configs/panda.json").read_text())
 OUT=Path("outputs/panda")
 def seed_for(dataset_seed,target_id,inference_seed,stream):
     key=f"{dataset_seed}:{target_id}:{inference_seed}:{stream}".encode()
     return int.from_bytes(hashlib.sha256(key).digest()[:4],"little")
 def optimizer_config(steps=None):
-    return WC.OuterConfig(outer_steps=steps or CFG["outer_steps"],outer_lr=CFG["outer_lr"],
-        cg_steps=CFG["cg_steps"],cg_damping=CFG["cg_damping"],u=CFG["wc_u"],
+    return outer.OuterConfig(outer_steps=steps or CFG["outer_steps"],outer_lr=CFG["outer_lr"],
+        cg_steps=CFG["cg_steps"],cg_damping=CFG["cg_damping"],u=CFG["preference_scale"],
         direction_clip_norm=CFG["direction_clip_norm"],log_every=CFG["log_every"])
 
 class Problem:
@@ -144,12 +144,12 @@ def run_varis(problem, preference, cfg, seed, callback, counts, dataset_seed, ti
     latent_seed = seed_for(dataset_seed, tid, seed, "bilevel_varis")
     for step in range(cfg.outer_steps):
         y = response(problem, x, float(preference[0]), latent_seed, counts)
-        values, matrix, cache = WC._stack_hypergradients(
+        values, matrix, cache = outer._stack_hypergradients(
             problem.upper_losses(), problem.lower_loss, x, y,
             cg_steps=cfg.cg_steps, damping=cfg.cg_damping, v_cache=cache)
-        qp = WC._solve_wc_qp((matrix.T@matrix).cpu().numpy(), values.cpu().numpy(), preference, cfg.u)
+        qp = outer._solve_preference_qp((matrix.T@matrix).cpu().numpy(), values.cpu().numpy(), preference, cfg.u)
         weights = torch.as_tensor(preference*qp.lam, device=x.device, dtype=x.dtype)
-        direction, _, _, _ = WC._clip_vector(matrix@weights, cfg.direction_clip_norm)
+        direction, _, _, _ = outer._clip_vector(matrix@weights, cfg.direction_clip_norm)
         x = (x-cfg.outer_lr*direction).detach()
         if step % cfg.log_every == 0 or step == cfg.outer_steps-1:
             callback({"step": step, **problem.metrics(x, y)})

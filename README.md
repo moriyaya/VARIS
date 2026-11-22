@@ -34,17 +34,16 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 
-# Evaluate the included checkpoints on a small query set.
-python -m varis.toy.run evaluate --quick --output outputs/toy
-python -m varis.pde.run evaluate --quick --output outputs/pde
+# Evaluate the included checkpoints.
+python -m varis.toy.run evaluate --output outputs/toy
+python -m varis.pde.run evaluate --output outputs/pde
 ```
 
 The repository includes VARIS implementations, experiment configurations, and nine trained toy/PDE checkpoints.
 
 - [Training and evaluation](docs/RUNNING.md)
 - [Experiment settings and metrics](docs/PROTOCOLS.md)
-- [Implementation checks](VALIDATION.md)
 
 ## License and acknowledgments
 
-Released under the [MIT License](LICENSE). See [third-party acknowledgments](THIRD_PARTY.md) for IKFlow, JRL, QUBIQ, and optimization dependencies. Citation metadata is available in [CITATION.cff](CITATION.cff).
+Released under the [MIT License](LICENSE). See [dependency acknowledgments](THIRD_PARTY.md). Citation metadata is available in [CITATION.cff](CITATION.cff).

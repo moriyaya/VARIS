@@ -48,7 +48,7 @@ def main():
     p.add_argument("--checkpoint", type=Path)
     p.add_argument("--output", type=Path, default=Path("outputs/pde"))
     p.add_argument("--tasks", type=int)
-    p.add_argument("--quick", action="store_true", help="Smoke run; not a paper evaluation.")
+    p.add_argument("--quick", action="store_true", help="Evaluate four tasks per split or run a short training check.")
     a = p.parse_args()
     torch.set_num_threads(2)
     cfg = SimpleNamespace(**json.loads(a.config.read_text()))

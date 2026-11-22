@@ -14,7 +14,6 @@
   "outer_lr": 0.1,
   "cg_steps": 10,
   "cg_damping": 0.001,
-  "wc_u": 10.0,
   "log_every": 10,
   "direction_clip_norm": 2.0,
   "shared_initial_solutions": 16,
@@ -25,5 +24,6 @@
   "generator_checkpoint": "panda__full__lp191_5.25m",
   "repair": {
     "maximum_total_trials_including_rejections": 5
-  }
+  },
+  "preference_scale": 10.0
 }

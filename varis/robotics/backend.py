@@ -64,9 +64,7 @@ class PandaBackend:
         return torch.maximum(torch.minimum(q, self.upper), self.lower)
 
     def collision_free(self, q: torch.Tensor) -> torch.Tensor:
-        # Primary certificate uses the official mesh checker, not an unvalidated
-        # learned score. The checker mutates its Klampt model; call serially per
-        # worker rather than concurrently sharing one mutable robot instance.
+        # Klampt collision checks mutate the robot model; execute serially.
         arrays = q.detach().cpu().numpy()
         valid = np.asarray([not self.robot.config_self_collides(row) for row in arrays], dtype=bool)
         self.collision_calls += len(arrays)

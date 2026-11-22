@@ -13,5 +13,10 @@
     2
   ],
   "folds": 5,
-  "checkpoint_metric": "annotation_coverage_dice"
+  "checkpoint_metric": "annotation_coverage_dice",
+  "timing": {
+    "blocks": 5,
+    "warmup": 20,
+    "repeats": 100
+  }
 }

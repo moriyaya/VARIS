@@ -10,6 +10,7 @@ Evaluate the supplied generators on six contexts and seven preferences:
 for seed in 0 1 2; do
   python -m varis.toy.run evaluate --seed "$seed" --output "outputs/toy/frozen_$seed"
   python -m varis.toy.run decision --variant coupled --seed "$seed" --output "outputs/toy/coupled_$seed"
+  python -m varis.toy.run evaluate --variant coupled --seed "$seed" --output "outputs/toy/coupled_solver_$seed"
 done
 ```
 
@@ -22,7 +23,7 @@ python -m varis.toy.run decision --variant coupled --checkpoint outputs/toy/trai
 python -m scripts.plot_toy --output outputs/toy_responses.pdf
 ```
 
-Use the bundled checkpoints to evaluate the archived models. Standalone retraining uses the same architecture, objective and schedule with a different initialization sequence from the original joint experiment. Results are saved as `results.csv` and `summary.json`.
+The bundled checkpoints contain the trained VARIS generators. Results are saved as `results.csv` and `summary.json`.
 
 ## Robotic configuration optimization
 
@@ -61,12 +62,8 @@ python -m varis.qubiq.run evaluate --data /path/to/prostate --fold 0 --seed 0 --
 
 Repeat folds 0–4 and seeds 0–2. This application uses six-response generation and prediction-based preference selection. The supplied splits and training settings are in `configs/qubiq_splits.json` and `configs/qubiq.json`. Checkpoints maximize validation annotation-coverage Dice; `result.json` contains case-level evaluation metrics.
 
-## Implementation checks
+Generation latency uses five blocks over all 48 images, including the network, sigmoid and thresholding:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m varis.qubiq.benchmark --data /path/to/prostate --checkpoint outputs/qubiq/fold0_seed0/best.pt --output outputs/qubiq/latency.json
 ```
-
-For shorter runs, use `--quick` (toy/PDE), `--targets 1 --steps 2` (robotics), or `--epochs 1` (segmentation). Completed checks and their budgets are recorded in [VALIDATION.md](../VALIDATION.md).
-
-The package contains VARIS code and checkpoints; comparison methods and ablation sweeps are excluded. External datasets and large pretrained assets are obtained using the instructions above.

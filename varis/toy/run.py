@@ -16,7 +16,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--device',default='cpu')
     p.add_argument('--steps',type=int)
-    p.add_argument('--quick',action='store_true',help='One context/two preferences; functional check only.')
+    p.add_argument('--quick',action='store_true',help='Evaluate one context and two preferences.')
     a=p.parse_args();cfg=json.loads(a.config.read_text());a.output.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(2)
     if a.variant=='coupled':

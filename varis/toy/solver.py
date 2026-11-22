@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 from .geometry import MLP, VALID_RADIUS, branch_centers, upper_targets
-from ..optimization import OuterConfig, _clip_vector, _solve_wc_qp, _stack_hypergradients
+from ..optimization import OuterConfig, _clip_vector, _solve_preference_qp, _stack_hypergradients
 class ContextualTripleWellProblem:
     num_objectives = 3
 
@@ -184,7 +184,7 @@ def run_amortized(
             v_cache=v_cache,
         )
         gram = (grad_matrix.T @ grad_matrix).detach().cpu().numpy()
-        qp = _solve_wc_qp(gram, values.detach().cpu().numpy(), preference, config.u)
+        qp = _solve_preference_qp(gram, values.detach().cpu().numpy(), preference, config.u)
         weights_np = preference * qp.lam
         weights = torch.as_tensor(weights_np, dtype=x.dtype)
         direction = grad_matrix @ weights

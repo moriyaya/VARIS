@@ -61,7 +61,7 @@ def _project_to_simplex(v: np.ndarray) -> np.ndarray:
     return np.maximum(z - theta, 0.0)
 
 
-def _wc_objective_and_grad(
+def _preference_objective_and_grad(
     lam: np.ndarray,
     gram: np.ndarray,
     values: np.ndarray,
@@ -74,7 +74,7 @@ def _wc_objective_and_grad(
     return obj, grad
 
 
-def _solve_wc_qp(
+def _solve_preference_qp(
     gram: np.ndarray,
     values: np.ndarray,
     preference: np.ndarray,
@@ -99,8 +99,7 @@ def _solve_wc_qp(
         values = np.nan_to_num(values, nan=0.0, posinf=1e6, neginf=-1e6)
 
     # Divide the whole objective by one positive constant. This improves
-    # conditioning without changing the optimizer of Eq. (5) or the meaning of
-    # the paper's trade-off parameter u.
+    # conditioning while preserving the preference-QP minimizer.
     objective_scale = max(float(np.max(np.abs(gram))), float(np.max(np.abs(values))), 1.0)
     gram = gram / objective_scale
     values = values / objective_scale
@@ -110,16 +109,16 @@ def _solve_wc_qp(
         from scipy.optimize import minimize
 
         result = minimize(
-            lambda lam: _wc_objective_and_grad(lam, gram, values, preference, u)[0],
+            lambda lam: _preference_objective_and_grad(lam, gram, values, preference, u)[0],
             lam0,
-            jac=lambda lam: _wc_objective_and_grad(lam, gram, values, preference, u)[1],
+            jac=lambda lam: _preference_objective_and_grad(lam, gram, values, preference, u)[1],
             method="SLSQP",
             bounds=[(0.0, 1.0)] * s,
             constraints={"type": "eq", "fun": lambda z: np.sum(z) - 1.0},
             options={"maxiter": max_iter, "ftol": tol},
         )
         lam = _project_to_simplex(result.x)
-        obj = _wc_objective_and_grad(lam, gram, values, preference, u)[0]
+        obj = _preference_objective_and_grad(lam, gram, values, preference, u)[0]
         if result.success:
             return _QPResult(lam=lam, objective=obj, success=True, message=result.message)
         message = f"scipy failed: {result.message}"
@@ -131,13 +130,13 @@ def _solve_wc_qp(
     step = 1.0 / max(2.0 * float(np.linalg.norm(h, ord="fro")), 1e-12)
     lam = lam0.copy()
     for _ in range(max_iter):
-        _, grad = _wc_objective_and_grad(lam, gram, values, preference, u)
+        _, grad = _preference_objective_and_grad(lam, gram, values, preference, u)
         new_lam = _project_to_simplex(lam - step * grad)
         if np.linalg.norm(new_lam - lam) <= tol:
             lam = new_lam
             break
         lam = new_lam
-    obj = _wc_objective_and_grad(lam, gram, values, preference, u)[0]
+    obj = _preference_objective_and_grad(lam, gram, values, preference, u)[0]
     return _QPResult(lam=lam, objective=obj, success=False, message=message)
 
 

@@ -55,7 +55,7 @@ def rank_pool(pool, residual, preferences, threshold):
 
 
 def preference_repair_plan(residual, scores, threshold, repair_band):
-    """Plan per-preference repair without a branch oracle or new threshold.
+    """Plan preference-conditioned local repair.
 
     residual: [task,candidate], scores: [task,preference,candidate].
     Repair only when the best repair-band candidate has a strictly better
@@ -119,7 +119,7 @@ def preference_repair_varis(model, starts, nu, obs, preferences, args):
     history = []
 
     def append_history(trial, phase):
-        """Record the deployable anytime output without changing the policy."""
+        """Record the current output."""
         with torch.no_grad():
             candidate_loss = lower_loss(y, nus, observations)
             candidate_score = upper_score(y, repeated_preferences)
