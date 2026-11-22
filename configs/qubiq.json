@@ -1,0 +1,17 @@
+{
+  "task": 2,
+  "size": 128,
+  "candidates": 6,
+  "epochs": 300,
+  "batch_size": 4,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "eval_interval": 20,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "folds": 5,
+  "checkpoint_metric": "annotation_coverage_dice"
+}

@@ -1,0 +1,33 @@
+{
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "train_tasks": 1024,
+  "test_tasks": 128,
+  "batch_size": 64,
+  "distill_steps": 1000,
+  "lower_steps": 1000,
+  "finetune_steps": 5000,
+  "learning_rate": 0.001,
+  "finetune_lr": 0.0002,
+  "lower_weight": 10.0,
+  "branch_weight": 1.0,
+  "threshold": 0.0001,
+  "preferences": [
+    0.15,
+    0.35,
+    0.65,
+    0.85
+  ],
+  "steps": 500,
+  "starts": 5,
+  "adam_lr": 0.02,
+  "repair_band": 0.01,
+  "repair_trials": 50,
+  "repair_lr": 1.0,
+  "trust_radius": 0.15,
+  "sigma": 0.0001,
+  "no_trace": true
+}

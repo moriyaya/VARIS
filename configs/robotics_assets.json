@@ -1,0 +1,27 @@
+{
+  "jrl_revision": "2ba7c3995b36b32886a8aa021a00c73b2cd55b2c",
+  "assets": [
+    {
+      "name": "ikflow",
+      "url": "https://codeload.github.com/jstmn/ikflow/tar.gz/2f4636e909a2f541e14477c5515237b99050218e",
+      "bytes": 4021819,
+      "sha256": "be9780ce0d0773083b1f70bd0a74a1c7a6a693efbcdd16b144801a19448998c3",
+      "filename": "ikflow.tar.gz"
+    },
+    {
+      "name": "jrl",
+      "url": "https://codeload.github.com/jstmn/Jrl/tar.gz/2ba7c3995b36b32886a8aa021a00c73b2cd55b2c",
+      "bytes": 45604447,
+      "sha256": "9c2a99ec0ca9c9b30dcfd1274ff5c01803ae84a6bea4d25ef20dcafecfff029e",
+      "filename": "jrl.tar.gz"
+    },
+    {
+      "name": "panda_checkpoint",
+      "url": "https://storage.googleapis.com/ikflow_models/panda/panda__lyric-puddle-191__global_step%3D5.25M.pkl",
+      "bytes": 203511873,
+      "sha256": "1ca739a595c31779292778aedd3e431cb697b48c3a2a4ea7c59e7fde1faa3d59",
+      "filename": "panda_checkpoint.pkl"
+    }
+  ],
+  "ikflow_revision": "2f4636e909a2f541e14477c5515237b99050218e"
+}

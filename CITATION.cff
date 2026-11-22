@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the accompanying VARIS manuscript."
+type: software
+title: "VARIS: Validity-Aware Response-Set Inference and Selection"
+authors:
+  - family-names: Gao
+    given-names: Jiaxin
+  - family-names: Liang
+    given-names: Zhenyu
+  - family-names: Cheng
+    given-names: Ran
+repository-code: "https://github.com/moriyaya/VARIS"
+license: MIT
+version: 0.1.0
+date-released: 2026-11-22
